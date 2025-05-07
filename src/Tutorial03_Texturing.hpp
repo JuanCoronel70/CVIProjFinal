@@ -8,6 +8,8 @@ namespace Diligent
 
 class Tutorial03_Texturing final : public SampleBase
 {
+
+
 public:
     virtual void Initialize(const SampleInitInfo& InitInfo) override final;
 
@@ -17,6 +19,8 @@ public:
     virtual const Char* GetSampleName() const override final { return "Tutorial03: Texturing"; }
 
 private:
+    // Variables para la animación de líquido
+    float                  m_Time = 0.0f;
     void CreatePipelineState();
     void CreateVertexBuffer();
     void CreateIndexBuffer();
@@ -29,7 +33,9 @@ private:
     RefCntAutoPtr<ITextureView>           m_TextureSRV;
     RefCntAutoPtr<IShaderResourceBinding> m_SRB;
     float4x4                              m_WorldViewProjMatrix;
+    bool                                  m_ConvertPSOutputToGamma = false;
 
+ 
 
 };
 
