@@ -72,7 +72,15 @@ void Tutorial03_Texturing::CreatePipelineState()
         m_pDevice->CreateShader(ShaderCI, &pVS);
         // Create dynamic uniform buffer that will store our transformation matrix
         // Dynamic buffers can be frequently updated by the CPU
-        CreateUniformBuffer(m_pDevice, sizeof(float4x4), "VS constants CB", &m_VSConstants);
+        struct VSConstants
+        {
+            float4x4 WorldViewProj;
+            float    Time;
+            float    WaveHeight;
+            float    WaveFreq;
+            float    WaveSpeed;
+        };
+        CreateUniformBuffer(m_pDevice, sizeof(VSConstants), "VS constants CB", &m_VSConstants);
     }
 
     // Create a pixel shader
@@ -156,28 +164,28 @@ void Tutorial03_Texturing::CreateVertexBuffer()
     const float PlaneWidth  = 12.0f; // Ancho total del plano (-1 a +1 en X)
     const float PlaneLength = 12.0f; // Largo total del plano (-1 a +1 en Z)
 
-    // Definimos la resoluciÛn del plano (n˙mero de divisiones)
-    const Uint32 VertexCountX = 100; // N˙mero de vÈrtices en el eje X
-    const Uint32 VertexCountZ = 100; // N˙mero de vÈrtices en el eje Z
+    // Definimos la resoluci√≥n del plano (n√∫mero de divisiones)
+    const Uint32 VertexCountX = 100; // N√∫mero de v√©rtices en el eje X
+    const Uint32 VertexCountZ = 100; // N√∫mero de v√©rtices en el eje Z
 
-    // Calculamos el n˙mero total de vÈrtices
+    // Calculamos el n√∫mero total de v√©rtices
     const Uint32 TotalVertexCount = VertexCountX * VertexCountZ;
 
-    // Creamos un arreglo din·mico para almacenar los vÈrtices
+    // Creamos un arreglo din√°mico para almacenar los v√©rtices
     std::vector<Vertex> PlaneVerts(TotalVertexCount);
 
-    // Calculamos el paso entre vÈrtices
+    // Calculamos el paso entre v√©rtices
     const float StepX = PlaneWidth / (VertexCountX - 1);
     const float StepZ = PlaneLength / (VertexCountZ - 1);
 
-    // Generamos los vÈrtices del plano
+    // Generamos los v√©rtices del plano
     for (Uint32 z = 0; z < VertexCountZ; ++z)
     {
         for (Uint32 x = 0; x < VertexCountX; ++x)
         {
             Uint32 index = z * VertexCountX + x;
 
-            // PosiciÛn del vÈrtice
+            // Posici√≥n del v√©rtice
             float xPos = -PlaneWidth / 2.0f + x * StepX;
             float zPos = -PlaneLength / 2.0f + z * StepZ;
 
@@ -185,13 +193,13 @@ void Tutorial03_Texturing::CreateVertexBuffer()
             float u = static_cast<float>(x) / (VertexCountX - 1);
             float v = static_cast<float>(z) / (VertexCountZ - 1);
 
-            // Almacenamos el vÈrtice
+            // Almacenamos el v√©rtice
             PlaneVerts[index].pos = float3{xPos, 0.0f, zPos}; // Y = 0 para un plano horizontal
             PlaneVerts[index].uv  = float2{u, v};
         }
     }
 
-    // Creamos el buffer de vÈrtices
+    // Creamos el buffer de v√©rtices
     BufferDesc VertBuffDesc;
     VertBuffDesc.Name      = "Plane vertex buffer";
     VertBuffDesc.Usage     = USAGE_IMMUTABLE;
@@ -208,46 +216,46 @@ void Tutorial03_Texturing::CreateVertexBuffer()
 
 void Tutorial03_Texturing::CreateIndexBuffer()
 {
-    // Definimos la resoluciÛn del plano
+    // Definimos la resoluci√≥n del plano
     const Uint32 VertexCountX = 100;
     const Uint32 VertexCountZ = 100;
 
-    // Calculamos el n˙mero de celdas en cada direcciÛn
+    // Calculamos el n√∫mero de celdas en cada direcci√≥n
     const Uint32 CellCountX = VertexCountX - 1;
     const Uint32 CellCountZ = VertexCountZ - 1;
 
-    // Cada celda requiere 2 tri·ngulos, cada tri·ngulo tiene 3 Ìndices
+    // Cada celda requiere 2 tri√°ngulos, cada tri√°ngulo tiene 3 √≠ndices
     const Uint32 TotalIndexCount = CellCountX * CellCountZ * 6;
 
-    // Creamos un arreglo din·mico para almacenar los Ìndices
+    // Creamos un arreglo din√°mico para almacenar los √≠ndices
     std::vector<Uint32> Indices(TotalIndexCount);
 
-    // Generamos los Ìndices para los tri·ngulos del plano
+    // Generamos los √≠ndices para los tri√°ngulos del plano
     Uint32 IndexOffset = 0;
 
     for (Uint32 z = 0; z < CellCountZ; ++z)
     {
         for (Uint32 x = 0; x < CellCountX; ++x)
         {
-            // Calculamos los Ìndices de los cuatro vÈrtices de la celda
+            // Calculamos los √≠ndices de los cuatro v√©rtices de la celda
             Uint32 BottomLeft  = z * VertexCountX + x;
             Uint32 BottomRight = BottomLeft + 1;
             Uint32 TopLeft     = (z + 1) * VertexCountX + x;
             Uint32 TopRight    = TopLeft + 1;
 
-            // Primer tri·ngulo: BottomLeft -> TopLeft -> TopRight
+            // Primer tri√°ngulo: BottomLeft -> TopLeft -> TopRight
             Indices[IndexOffset++] = BottomLeft;
             Indices[IndexOffset++] = TopLeft;
             Indices[IndexOffset++] = TopRight;
 
-            // Segundo tri·ngulo: BottomLeft -> TopRight -> BottomRight
+            // Segundo tri√°ngulo: BottomLeft -> TopRight -> BottomRight
             Indices[IndexOffset++] = BottomLeft;
             Indices[IndexOffset++] = TopRight;
             Indices[IndexOffset++] = BottomRight;
         }
     }
 
-    // Creamos el buffer de Ìndices
+    // Creamos el buffer de √≠ndices
     BufferDesc IndBuffDesc;
     IndBuffDesc.Name      = "Plane index buffer";
     IndBuffDesc.Usage     = USAGE_IMMUTABLE;
@@ -302,9 +310,22 @@ void Tutorial03_Texturing::Render()
     m_pImmediateContext->ClearDepthStencil(pDSV, CLEAR_DEPTH_FLAG, 1.f, 0, RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
 
     {
-        // Map the buffer and write current world-view-projection matrix
-        MapHelper<float4x4> CBConstants(m_pImmediateContext, m_VSConstants, MAP_WRITE, MAP_FLAG_DISCARD);
-        *CBConstants = m_WorldViewProjMatrix;
+        // Map the buffer and write current world-view-projection matrix and wave animation parameters
+        struct VSConstants
+        {
+            float4x4 WorldViewProj;
+            float    Time;
+            float    WaveHeight;
+            float    WaveFreq;
+            float    WaveSpeed;
+        };
+
+        MapHelper<VSConstants> CBConstants(m_pImmediateContext, m_VSConstants, MAP_WRITE, MAP_FLAG_DISCARD);
+        CBConstants->WorldViewProj = m_WorldViewProjMatrix;
+        CBConstants->Time          = m_Time; // Tiempo actualizado en m√©todo Update()
+        CBConstants->WaveHeight    = 0.3f;   // Altura de las ondas
+        CBConstants->WaveFreq      = 0.4f;   // Frecuencia de las ondas
+        CBConstants->WaveSpeed     = 1.5f;   // Velocidad de las ondas
     }
 
     // Bind vertex and index buffers
@@ -322,8 +343,8 @@ void Tutorial03_Texturing::Render()
     DrawIndexedAttribs DrawAttrs;    // This is an indexed draw call
     DrawAttrs.IndexType = VT_UINT32; // Index type
 
-    // Actualizar el n˙mero de Ìndices
-    // Para un plano de resoluciÛn 100x100, tenemos 99*99*2 tri·ngulos (99*99*6 Ìndices)
+    // Actualizar el n√∫mero de √≠ndices
+    // Para un plano de resoluci√≥n 100x100, tenemos 99*99*2 tri√°ngulos (99*99*6 √≠ndices)
     const Uint32 VertexCountX = 100;
     const Uint32 VertexCountZ = 100;
     const Uint32 CellCountX   = VertexCountX - 1;
@@ -335,14 +356,16 @@ void Tutorial03_Texturing::Render()
     m_pImmediateContext->DrawIndexed(DrawAttrs);
 }
 
-
 void Tutorial03_Texturing::Update(double CurrTime, double ElapsedTime, bool DoUpdateUI)
 {
     SampleBase::Update(CurrTime, ElapsedTime, DoUpdateUI);
 
+    // Actualizar el tiempo para la animaci√≥n del l√≠quido
+    m_Time += static_cast<float>(ElapsedTime);
+
     float4x4 PlaneModelTransform = float4x4::RotationX(-PI_F * 0.15f); // Rotar para ver mejor el plano
 
-    // Ajustar la c·mara para ver el plano desde arriba
+    // Ajustar la c√°mara para ver el plano desde arriba
     float4x4 View = float4x4::Translation(0.f, 2.0f, 20.0f);
 
     // Get pretransform matrix that rotates the scene according the surface orientation
